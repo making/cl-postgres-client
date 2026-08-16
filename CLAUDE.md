@@ -10,8 +10,9 @@ Every source file opens with a `;;;;` banner saying why it exists — read that 
 - Every exported symbol must carry a docstring; keep the `:export` list in
   `src/package.lisp` grouped by concern.
 - The sources must stay conditionalisation-free: `make rontolisp-test{,-jvm,-wasm}`
-  runs the same files on rontolisp's backends, and anything they cannot do is
-  reported there (making/rontolisp, `.todo/408`), not worked around here.
+  runs the same files on rontolisp's backends, all three are green and all three
+  gate CI. Anything they cannot do is reported to making/rontolisp, not worked
+  around here.
 
 ## cl-postgres facts that cost time to rediscover
 

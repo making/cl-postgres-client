@@ -202,8 +202,8 @@ make test      # start PostgreSQL in Docker, then run the suite
 make db-down   # stop it again
 ```
 
-CI runs the same targets on every push: SBCL is the gate, and the rontolisp
-backends below report their counts without blocking.
+CI runs the same targets on every push, and all of them gate: SBCL first, then
+the three rontolisp backends below.
 
 `make test` installs a project-local Quicklisp under `.quicklisp/` on first run,
 so nothing has to be installed beyond SBCL and Docker. The suite runs against
@@ -234,11 +234,8 @@ name every release directory on `--system-path`; the Makefile does both.
 WebAssembly Preview 1 is out by design -- it has no TCP sockets -- so the
 component is the only WASM target.
 
-The suite is not yet green there. What fails is the test framework's recorder
-meeting rontolisp's condition handling, not the library: prepared-statement
-recovery (which catches its own error and retries), `do-rows`' early `return` on
-the interpreter, and a handful of `signals` assertions. The details, per backend,
-are in rontolisp's own `.todo/408`.
+The whole suite passes on all three -- the same assertions SBCL runs, none
+skipped or conditionalised away -- and CI gates on each of them.
 
 ## License
 

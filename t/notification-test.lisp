@@ -4,7 +4,9 @@
 ;;;;
 ;;;; WAIT-FOR-NOTIFICATION blocks with no timeout of its own, so a bug here
 ;;;; would hang the suite rather than fail it. The waits are wrapped in a
-;;;; deadline for that reason alone.
+;;;; deadline for that reason alone. Only SBCL can hold that deadline --
+;;;; cl-postgres exposes no socket timeout, so there is nothing portable to
+;;;; build one from -- and elsewhere CI's job timeout is the only net.
 
 (in-package #:cl-postgres-client/test)
 

@@ -41,16 +41,14 @@ jobs:
         if: failure()
         run: docker compose logs postgres
 
-  # Not a gate. The same sources run on rontolisp, and what fails there is
-  # rontolisp's condition handling meeting rove's recorder rather than anything
-  # this library can fix -- the details are in making/rontolisp `.todo/408`.
-  # These jobs exist to show the counts and to notice the day they change, so
-  # they report rather than block.
+  # Also a gate. The same sources run on rontolisp's three backends and the
+  # suite is green on all of them, so a failure here is news either way: a
+  # portability regression in this library, or one in rontolisp, which is a
+  # SNAPSHOT dependency. Both are worth stopping for.
   rontolisp:
     name: rontolisp (${{ matrix.backend }})
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
@@ -96,9 +94,7 @@ jobs:
           key: rontolisp-quicklisp-${{ runner.os }}-${{ hashFiles('cl-postgres-client.asd') }}
           restore-keys: rontolisp-quicklisp-${{ runner.os }}-
 
-      # No continue-on-error here: the step is allowed to go red, so the failure
-      # is visible where it happened. The JOB carries it instead, which is what
-      # keeps the workflow green.
+      # `tee` would otherwise hide a failing suite behind its own exit status.
       - name: Run the suite
         id: run
         run: |
