@@ -16,9 +16,9 @@
                                    "select name from users where id >= 10 order by id"))))
 
     (testing "copy-rows accepts vectors as rows"
-      (ok (= 1 (pgc:copy-rows client "users" (vector (vector 12 "lena" 45))
-                              :columns '("id" "name" "age"))))
-      (ok (equal "lena" (pgc:query-value client "select name from users where id = 12"))))
+      (let ((rows (vector (vector 12 "lena" 45))))
+        (ok (= 1 (pgc:copy-rows client "users" rows :columns '("id" "name" "age"))))
+        (ok (equal "lena" (pgc:query-value client "select name from users where id = 12")))))
 
     (testing "an empty load is a no-op"
       (ok (= 0 (pgc:copy-rows client "users" '() :columns '("id" "name")))))))

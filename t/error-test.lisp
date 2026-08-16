@@ -12,20 +12,21 @@
                    'pgc:database-error)))
 
     (testing "the SQLSTATE and the constraint name are readable"
-      (handler-case (pgc:update client "insert into users (id, name) values (1, 'dup')")
-        (pgc:database-error (condition)
-          (ok (equal "23505" (pgc:database-error-code condition)))
-          (ok (equal "users_pkey" (pgc:database-error-constraint-name condition)))
-          (ok (stringp (pgc:database-error-message condition))))))
+      (let ((condition (caught-condition
+                        (pgc:update client "insert into users (id, name) values (1, 'dup')"))))
+        (ok (typep condition 'pgc:database-error))
+        (ok (equal "23505" (pgc:database-error-code condition)))
+        (ok (equal "users_pkey" (pgc:database-error-constraint-name condition)))
+        (ok (stringp (pgc:database-error-message condition)))))
 
     (testing "a specific cl-postgres error class still matches"
       (ok (signals (pgc:update client "insert into users (id, name) values (1, 'dup')")
                    'cl-postgres-error:unique-violation)))
 
     (testing "a syntax error names the query"
-      (handler-case (pgc:query-list client "select from where")
-        (pgc:database-error (condition)
-          (ok (search "select from where" (pgc:database-error-query condition))))))
+      (let ((condition (caught-condition (pgc:query-list client "select from where"))))
+        (ok (typep condition 'pgc:database-error))
+        (ok (search "select from where" (pgc:database-error-query condition)))))
 
     (testing "the client recovers after an error"
       (ok (= 3 (pgc:query-value client "select count(*) from users"))))))

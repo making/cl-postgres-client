@@ -30,6 +30,20 @@ DROP TABLE IF EXISTS, whose notice would otherwise bury the test output."
     (pgc:execute client "set client_min_messages = warning")
     client))
 
+(defmacro caught-condition (&body body)
+  "Run BODY and return the error it signals, or NIL when it returns normally.
+
+A test that wants to read a condition -- its SQLSTATE, its row count -- reaches
+for this rather than wrapping the call in HANDLER-CASE, because a HANDLER-CASE
+clause that never runs takes its assertions with it and the test passes having
+checked nothing. Here the condition is a value like any other, so the test that
+it was signalled at all is an assertion of its own."
+  (let ((tag (gensym "CAUGHT")))
+    `(block ,tag
+       (handler-bind ((error (lambda (condition) (return-from ,tag condition))))
+         ,@body
+         nil))))
+
 (defmacro with-test-client ((client) &body body)
   "Bind CLIENT to a fresh connection for the duration of BODY."
   `(let ((,client (connect-for-test)))

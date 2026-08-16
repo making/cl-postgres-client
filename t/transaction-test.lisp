@@ -69,10 +69,10 @@
     (testing "a nested transaction that fails leaves the outer one intact"
       (pgc:with-transaction (client)
         (insert-user client 20 "t")
-        (ignore-errors
-         (pgc:with-transaction (client)
-           (insert-user client 21 "u")
-           (error "boom"))))
+        (caught-condition
+          (pgc:with-transaction (client)
+            (insert-user client 21 "u")
+            (error "boom"))))
       (ok (= 4 (user-count client)))
       (ok (= 1 (pgc:query-value client "select count(*) from users where id = 20")))
       (ok (= 0 (pgc:query-value client "select count(*) from users where id = 21"))))

@@ -51,7 +51,11 @@ cl-postgres is the only runtime dependency."
                (:file "copy-test")
                (:file "notification-test")
                (:file "error-test"))
+  ;; ROVE:RUN is named rather than this system's own RUN-TESTS because a .asd is
+  ;; read before either package exists, so the call has to be made by name at
+  ;; run time -- and a name that the test runner itself calls is the one certain
+  ;; to be present in whatever image is performing the operation.
   :perform (test-op (operation component)
              (declare (ignore operation component))
-             (unless (funcall (symbol-function (find-symbol "RUN-TESTS" "CL-POSTGRES-CLIENT/TEST")))
+             (unless (funcall (find-symbol "RUN" "ROVE") :cl-postgres-client/test)
                (error "cl-postgres-client test suite failed"))))

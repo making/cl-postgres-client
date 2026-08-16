@@ -5,11 +5,13 @@ Every source file opens with a `;;;;` banner saying why it exists — read that 
 
 ## Working here
 
-- SBCL only. There is no global Quicklisp/Roswell/qlot on this machine; `make deps`
-  installs one under `.quicklisp/`. `make test` needs Docker.
-- Not a git repository yet.
+- SBCL is the reference. There is no global Quicklisp/Roswell/qlot on this machine;
+  `make deps` installs one under `.quicklisp/`. `make test` needs Docker.
 - Every exported symbol must carry a docstring; keep the `:export` list in
   `src/package.lisp` grouped by concern.
+- The sources must stay conditionalisation-free: `make rontolisp-test{,-jvm,-wasm}`
+  runs the same files on rontolisp's backends, and anything they cannot do is
+  reported there (making/rontolisp, `.todo/408`), not worked around here.
 
 ## cl-postgres facts that cost time to rediscover
 
@@ -31,3 +33,5 @@ Source is under `.quicklisp/dists/quicklisp/software/postmodern-*/cl-postgres/`.
 rove, one package (`cl-postgres-client/test`), fixtures in `t/helpers.lisp`.
 Assertions are `(ok (signals form 'type))` — `signals` is not an assertion by itself.
 `t/named-parameters-test.lisp` is the only file that runs without a database.
+A test that needs the condition object uses `caught-condition`, not `handler-case`:
+a clause that never runs takes its assertions with it and the test passes vacuously.

@@ -17,7 +17,7 @@ Put the repository where ASDF can find it and load it:
 ```
 
 The package is `postgres-client`, nicknamed `pgc`. SBCL is the supported
-implementation.
+implementation; see [rontolisp](#rontolisp) for the other one that runs it.
 
 ## Use
 
@@ -204,6 +204,36 @@ make db-down   # stop it again
 so nothing has to be installed beyond SBCL and Docker. The suite runs against
 `postgres:17-alpine` on port 55432; point it elsewhere with `PGC_TEST_HOST`,
 `PGC_TEST_PORT`, `PGC_TEST_DB`, `PGC_TEST_USER` and `PGC_TEST_PASSWORD`.
+
+The container authenticates with `md5` rather than the modern `scram-sha-256`.
+Nothing here tests authentication, and SCRAM costs 4096 rounds of PBKDF2 per
+connection -- half a minute per test on an interpreter, where every test opens
+its own connection.
+
+## rontolisp
+
+The library also runs on [rontolisp](https://github.com/making/rontolisp), a
+Common Lisp subset with an interpreter, a JVM compiler and two WebAssembly
+compilers. Nothing is conditionalised for it: the same sources load through
+`asdf:load-system` and the whole public API answers as it does on SBCL.
+
+```sh
+make rontolisp-test        # interpreter
+make rontolisp-test-jvm    # compiled to JVM bytecode
+make rontolisp-test-wasm   # compiled to a WASI 0.3 component
+```
+
+rontolisp's ASDF does not fall back to Quicklisp for a missing dependency, so
+these targets pre-fetch `cl-postgres` and `rove` into rontolisp's own cache and
+name every release directory on `--system-path`; the Makefile does both.
+WebAssembly Preview 1 is out by design -- it has no TCP sockets -- so the
+component is the only WASM target.
+
+The suite is not yet green there. What fails is the test framework's recorder
+meeting rontolisp's condition handling, not the library: prepared-statement
+recovery (which catches its own error and retries), `do-rows`' early `return` on
+the interpreter, and a handful of `signals` assertions. The details, per backend,
+are in rontolisp's own `.todo/408`.
 
 ## License
 

@@ -136,9 +136,9 @@
                    'pgc:too-many-rows-error)))
 
     (testing "too-many-rows-error reports how many there were"
-      (handler-case (pgc:query-single client "select id from users")
-        (pgc:too-many-rows-error (condition)
-          (ok (= 3 (pgc:error-row-count condition))))))
+      (let ((condition (caught-condition (pgc:query-single client "select id from users"))))
+        (ok (typep condition 'pgc:too-many-rows-error))
+        (ok (= 3 (pgc:error-row-count condition)))))
 
     (testing "value with several columns signals too-many-columns-error"
       (ok (signals (pgc:query-value client "select id, name from users where id = 1")
@@ -154,9 +154,10 @@
                    'pgc:parameter-error)))
 
     (testing "parameter-error names the parameter it could not bind"
-      (handler-case (pgc:query-value client "select id from users where name = :who")
-        (pgc:parameter-error (condition)
-          (ok (eq :who (pgc:error-parameter-name condition))))))
+      (let ((condition (caught-condition
+                        (pgc:query-value client "select id from users where name = :who"))))
+        (ok (typep condition 'pgc:parameter-error))
+        (ok (eq :who (pgc:error-parameter-name condition)))))
 
     (testing "a property list of odd length signals parameter-error"
       (ok (signals (pgc:query-value client "select id from users where id = :id"
