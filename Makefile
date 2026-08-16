@@ -7,11 +7,13 @@ BUILD ?= $(CURDIR)/build
 
 # rontolisp's ASDF looks for NAME.asd in flat directories only, and it does not
 # fall back to Quicklisp for a missing dependency, so every downloaded release
-# has to be named on the search path. RONTOLISP_DEPS fills the cache first.
-empty :=
-space := $(empty) $(empty)
-RONTOLISP_SYSTEM_PATH = $(subst $(space),:,$(CURDIR) $(wildcard $(RONTOLISP_HOME)/quicklisp/software/*))
-RONTOLISP_TEST = $(RONTOLISP) test cl-postgres-client/test --system-path '$(RONTOLISP_SYSTEM_PATH)'
+# has to be named on the search path. The rontolisp-deps target fills the cache.
+#
+# The list is built by the shell rather than with $(wildcard): those directories
+# appear during this same make run, and make would answer from the listing it
+# read before the download.
+RONTOLISP_SYSTEM_PATH = "$(CURDIR)$$(for dir in $(RONTOLISP_HOME)/quicklisp/software/*/; do printf ':%s' "$$dir"; done)"
+RONTOLISP_TEST = $(RONTOLISP) test cl-postgres-client/test --system-path $(RONTOLISP_SYSTEM_PATH)
 
 .PHONY: test deps db-up db-down db-logs repl clean
 .PHONY: rontolisp-deps rontolisp-test rontolisp-test-jvm rontolisp-test-wasm

@@ -1,5 +1,7 @@
 # cl-postgres-client
 
+[![CI](https://github.com/making/cl-postgres-client/actions/workflows/ci.yaml/badge.svg)](https://github.com/making/cl-postgres-client/actions/workflows/ci.yaml)
+
 A high-level PostgreSQL client for Common Lisp, layered on
 [cl-postgres](https://github.com/marijnh/Postmodern/tree/master/cl-postgres) and
 shaped after Spring Framework's `JdbcClient`: named parameters, row mapping,
@@ -199,6 +201,9 @@ each thread its own client. There is no connection pool.
 make test      # start PostgreSQL in Docker, then run the suite
 make db-down   # stop it again
 ```
+
+CI runs the same targets on every push: SBCL is the gate, and the rontolisp
+backends below report their counts without blocking.
 
 `make test` installs a project-local Quicklisp under `.quicklisp/` on first run,
 so nothing has to be installed beyond SBCL and Docker. The suite runs against

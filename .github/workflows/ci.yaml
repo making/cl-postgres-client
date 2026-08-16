@@ -1,0 +1,124 @@
+name: CI
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # The gate. SBCL is the reference implementation, and the suite is green there.
+  sbcl:
+    name: SBCL
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install SBCL
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends sbcl
+          sbcl --version
+
+      # `make deps` is a file target, so a restored cache skips both the
+      # Quicklisp bootstrap and the cl-postgres / rove downloads under it.
+      - name: Cache the project-local Quicklisp
+        uses: actions/cache@v6
+        with:
+          path: .quicklisp
+          key: quicklisp-${{ runner.os }}-${{ hashFiles('cl-postgres-client.asd') }}
+          restore-keys: quicklisp-${{ runner.os }}-
+
+      - name: Run the suite
+        run: make test
+
+      - name: PostgreSQL log
+        if: failure()
+        run: docker compose logs postgres
+
+  # Not a gate. The same sources run on rontolisp, and what fails there is
+  # rontolisp's condition handling meeting rove's recorder rather than anything
+  # this library can fix -- the details are in making/rontolisp `.todo/408`.
+  # These jobs exist to show the counts and to notice the day they change, so
+  # they report rather than block.
+  rontolisp:
+    name: rontolisp (${{ matrix.backend }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - backend: interpreter
+            target: rontolisp-test
+          - backend: jvm
+            target: rontolisp-test-jvm
+          - backend: wasm-component
+            target: rontolisp-test-wasm
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install rontolisp
+        run: |
+          sudo curl -sSLo /usr/local/bin/rontolisp \
+            https://github.com/making/rontolisp/releases/download/0.1.0-SNAPSHOT/rontolisp-linux-amd64
+          sudo chmod +x /usr/local/bin/rontolisp
+          rontolisp --version
+
+      # The compiled run needs a JVM to execute the emitted class; the component
+      # needs a wasm-GC runtime with exception handling.
+      - name: Install a JVM
+        if: matrix.backend == 'jvm'
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Install wasmtime
+        if: matrix.backend == 'wasm-component'
+        uses: bytecodealliance/actions/wasmtime/setup@v1
+        with:
+          version: "v47.0.3"
+
+      # rontolisp's ASDF does not fall back to Quicklisp for a missing
+      # dependency, so `make rontolisp-deps` fills this cache and the Makefile
+      # names every release directory in it on --system-path.
+      - name: Cache rontolisp's Quicklisp
+        uses: actions/cache@v6
+        with:
+          path: ~/.rontolisp/quicklisp
+          key: rontolisp-quicklisp-${{ runner.os }}-${{ hashFiles('cl-postgres-client.asd') }}
+          restore-keys: rontolisp-quicklisp-${{ runner.os }}-
+
+      - name: Run the suite
+        id: run
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          make ${{ matrix.target }} 2>&1 | tee run.log
+
+      - name: Report the counts
+        if: always()
+        run: |
+          passed=$(grep -ac '✓' run.log || true)
+          failed=$(grep -acE '^[[:space:]]+×' run.log || true)
+          {
+            echo "### rontolisp ${{ matrix.backend }}"
+            echo
+            echo "| passed | failed | exit |"
+            echo "| --- | --- | --- |"
+            echo "| $passed | $failed | ${{ steps.run.outcome }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the run log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: rontolisp-${{ matrix.backend }}-log
+          path: run.log
