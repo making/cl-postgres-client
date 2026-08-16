@@ -96,9 +96,11 @@ jobs:
           key: rontolisp-quicklisp-${{ runner.os }}-${{ hashFiles('cl-postgres-client.asd') }}
           restore-keys: rontolisp-quicklisp-${{ runner.os }}-
 
+      # No continue-on-error here: the step is allowed to go red, so the failure
+      # is visible where it happened. The JOB carries it instead, which is what
+      # keeps the workflow green.
       - name: Run the suite
         id: run
-        continue-on-error: true
         run: |
           set -o pipefail
           make ${{ matrix.target }} 2>&1 | tee run.log
