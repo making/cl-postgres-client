@@ -1,0 +1,11 @@
+# Compiled Lisp artifacts
+*.fasl
+*.dfsl
+*.fas
+*.lib
+
+# Project-local Quicklisp installed by `make deps`
+/.quicklisp/
+
+# Scratch output
+/tmp/

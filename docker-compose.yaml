@@ -1,0 +1,18 @@
+# PostgreSQL instance used by the test suite.
+#
+# Port 55432 is deliberately not 5432: the suite must not collide with -- or
+# silently run against -- a PostgreSQL the developer already has running.
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: pgc_test
+      POSTGRES_USER: pgc
+      POSTGRES_PASSWORD: pgc
+    ports:
+      - "55432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pgc -d pgc_test"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
