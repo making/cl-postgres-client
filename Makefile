@@ -1,6 +1,25 @@
 LISP ?= sbcl
 QUICKLISP_URL ?= https://beta.quicklisp.org/quicklisp.lisp
 
+# `make test LISP=ecl`, `LISP=ccl`.  Only two things are spelled differently
+# between the implementations: how a file is run as a script, and which flags
+# mean "read no init file and do not stop at a REPL".  --load and --eval agree
+# everywhere, and a script ends the process at end of file on all three, so
+# every other line below is written once.  A batch of --eval forms still ends
+# with an explicit quit: ECL would otherwise fall into the REPL and read make's
+# own stdin.
+LISP_KIND = $(notdir $(LISP))
+ifeq ($(LISP_KIND),ecl)
+  LISP_SCRIPT = --norc --shell
+  LISP_BATCH  = --norc
+else ifeq ($(LISP_KIND),ccl)
+  LISP_SCRIPT = --script
+  LISP_BATCH  = --batch --no-init
+else
+  LISP_SCRIPT = --script
+  LISP_BATCH  = --non-interactive --no-userinit
+endif
+
 RONTOLISP ?= rontolisp
 RONTOLISP_HOME ?= $(HOME)/.rontolisp
 BUILD ?= $(CURDIR)/build
@@ -20,7 +39,7 @@ RONTOLISP_TEST = $(RONTOLISP) test cl-postgres-client/test --system-path $(RONTO
 
 ## Run the whole suite against a freshly started PostgreSQL container.
 test: deps db-up
-	$(LISP) --script run-tests.lisp
+	$(LISP) $(LISP_SCRIPT) run-tests.lisp
 
 ## Install a project-local Quicklisp. Skipped when one is already present.
 deps: .quicklisp/setup.lisp
@@ -30,9 +49,9 @@ deps: .quicklisp/setup.lisp
 	tmp="$$(mktemp -d)"; \
 	trap 'rm -rf "$$tmp"' EXIT; \
 	curl -sSLo "$$tmp/quicklisp.lisp" "$(QUICKLISP_URL)"; \
-	$(LISP) --non-interactive --no-userinit \
-	        --load "$$tmp/quicklisp.lisp" \
-	        --eval '(quicklisp-quickstart:install :path ".quicklisp/")'
+	printf '(load "%s")(quicklisp-quickstart:install :path "%s")' \
+	       "$$tmp/quicklisp.lisp" "$(CURDIR)/.quicklisp/" > "$$tmp/install.lisp"; \
+	$(LISP) $(LISP_SCRIPT) "$$tmp/install.lisp"
 
 ## Fetch cl-postgres and rove into rontolisp's own Quicklisp cache, which is
 ## also where the .asd files RONTOLISP_SYSTEM_PATH names come from.
@@ -76,6 +95,7 @@ repl: deps
 clean:
 	find . -name '*.fasl' -delete
 	rm -rf $(BUILD)
-	$(LISP) --non-interactive --no-userinit \
+	$(LISP) $(LISP_BATCH) \
 	        --eval '(require :asdf)' \
-	        --eval '(uiop:delete-directory-tree (asdf:apply-output-translations (uiop:getcwd)) :validate t :if-does-not-exist :ignore)'
+	        --eval '(uiop:delete-directory-tree (asdf:apply-output-translations (uiop:getcwd)) :validate t :if-does-not-exist :ignore)' \
+	        --eval '(uiop:quit)'

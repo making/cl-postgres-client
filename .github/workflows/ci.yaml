@@ -11,31 +11,63 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # The gate. SBCL is the reference implementation, and the suite is green there.
-  sbcl:
-    name: SBCL
+  # The gate. SBCL is the reference implementation; CCL and ECL are here because
+  # Quicklisp is a home for portable libraries, and a suite that only ever runs
+  # on SBCL is how an implementation-specific assumption gets in unnoticed.
+  lisp:
+    name: ${{ matrix.name }}
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: SBCL
+            lisp: sbcl
+          - name: CCL
+            lisp: ccl
+          - name: ECL
+            lisp: ecl
     steps:
       - uses: actions/checkout@v7
 
-      - name: Install SBCL
+      # CCL has no distribution package. Its release tarball carries the binary
+      # next to the heap image it needs, and CCL resolves the symlink before
+      # looking for that image, so one link into PATH is the whole install.
+      - name: Install ${{ matrix.name }}
+        env:
+          CCL_URL: https://github.com/Clozure/ccl/releases/download/v1.13/ccl-1.13-linuxx86.tar.gz
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends sbcl
-          sbcl --version
+          if [ "${{ matrix.lisp }}" = ccl ]; then
+            curl -sSL "$CCL_URL" | sudo tar xz -C /opt
+            sudo ln -s /opt/ccl/lx86cl64 /usr/local/bin/ccl
+          else
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends ${{ matrix.lisp }}
+          fi
+          ${{ matrix.lisp }} --version
 
       # `make deps` is a file target, so a restored cache skips both the
       # Quicklisp bootstrap and the cl-postgres / rove downloads under it.
+      # ASDF's output cache rides along because ECL compiles through a C
+      # compiler and rebuilding its dependencies from scratch costs more than
+      # the run itself; the checkout is younger than anything restored here, so
+      # this library's own files still recompile every time.
+      #
+      # Each implementation keeps its own key. The contents would be shareable,
+      # but three jobs saving one key is a race whose losers report a failure
+      # for work that succeeded.
       - name: Cache the project-local Quicklisp
         uses: actions/cache@v6
         with:
-          path: .quicklisp
-          key: quicklisp-${{ runner.os }}-${{ hashFiles('cl-postgres-client.asd') }}
-          restore-keys: quicklisp-${{ runner.os }}-
+          path: |
+            .quicklisp
+            ~/.cache/common-lisp
+          key: quicklisp-${{ runner.os }}-${{ matrix.lisp }}-${{ hashFiles('cl-postgres-client.asd') }}
+          restore-keys: quicklisp-${{ runner.os }}-${{ matrix.lisp }}-
 
       - name: Run the suite
-        run: make test
+        run: make test LISP=${{ matrix.lisp }}
 
       - name: PostgreSQL log
         if: failure()

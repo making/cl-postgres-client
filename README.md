@@ -18,8 +18,9 @@ Put the repository where ASDF can find it and load it:
 (asdf:load-system "cl-postgres-client")
 ```
 
-The package is `postgres-client`, nicknamed `pgc`. SBCL is the supported
-implementation; see [rontolisp](#rontolisp) for the other one that runs it.
+The package is `postgres-client`, nicknamed `pgc`. SBCL, Clozure CL and ECL are
+supported and CI gates on all three; see [rontolisp](#rontolisp) for the fourth
+implementation that runs it.
 
 ## Use
 
@@ -198,15 +199,17 @@ each thread its own client. There is no connection pool.
 ## Develop
 
 ```sh
-make test      # start PostgreSQL in Docker, then run the suite
-make db-down   # stop it again
+make test              # start PostgreSQL in Docker, then run the suite
+make test LISP=ccl     # the same suite on Clozure CL
+make test LISP=ecl     # ... and on ECL
+make db-down           # stop PostgreSQL again
 ```
 
-CI runs the same targets on every push, and all of them gate: SBCL first, then
-the three rontolisp backends below.
+CI runs the same targets on every push, and all of them gate: the three
+implementations above, then the three rontolisp backends below.
 
 `make test` installs a project-local Quicklisp under `.quicklisp/` on first run,
-so nothing has to be installed beyond SBCL and Docker. The suite runs against
+so nothing has to be installed beyond a Lisp and Docker. The suite runs against
 `postgres:17-alpine` on port 55432; point it elsewhere with `PGC_TEST_HOST`,
 `PGC_TEST_PORT`, `PGC_TEST_DB`, `PGC_TEST_USER` and `PGC_TEST_PASSWORD`.
 
@@ -214,6 +217,8 @@ The container authenticates with `md5` rather than the modern `scram-sha-256`.
 Nothing here tests authentication, and SCRAM costs 4096 rounds of PBKDF2 per
 connection -- half a minute per test on an interpreter, where every test opens
 its own connection.
+
+Releases, and what Quicklisp takes from them: [How-to-Release.md](How-to-Release.md).
 
 ## rontolisp
 
