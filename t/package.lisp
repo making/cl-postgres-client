@@ -4,8 +4,13 @@
 ;;;; PGC nickname rather than by using the package, so every test doubles as a
 ;;;; sample of what a caller writes.
 
+;;;; RUN-TESTS is shadowed because rove exports a RUN-TESTS of its own: without
+;;;; the shadow, USE-PACKAGE hands that symbol over and the DEFUN below replaces
+;;;; rove's generic function with a plain one.  SBCL only warns; CCL refuses.
+
 (defpackage #:cl-postgres-client/test
   (:use #:cl #:rove)
+  (:shadow #:run-tests)
   (:export #:run-tests))
 
 (in-package #:cl-postgres-client/test)

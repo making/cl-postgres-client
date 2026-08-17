@@ -33,6 +33,7 @@ Source is under `.quicklisp/dists/quicklisp/software/postmodern-*/cl-postgres/`.
 
 rove, one package (`cl-postgres-client/test`), fixtures in `t/helpers.lisp`.
 Assertions are `(ok (signals form 'type))` — `signals` is not an assertion by itself.
-`t/named-parameters-test.lisp` is the only file that runs without a database.
+`t/named-parameters-test.lisp` and `t/package-test.lisp` are the files that run
+without a database.
 A test that needs the condition object uses `caught-condition`, not `handler-case`:
 a clause that never runs takes its assertions with it and the test passes vacuously.

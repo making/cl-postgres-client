@@ -41,6 +41,7 @@ cl-postgres is the only runtime dependency."
   :serial t
   :components ((:file "package")
                (:file "helpers")
+               (:file "package-test")
                (:file "named-parameters-test")
                (:file "client-test")
                (:file "query-test")

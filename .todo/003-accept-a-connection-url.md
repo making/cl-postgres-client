@@ -75,10 +75,9 @@ leaning on them.
 
 ## Tests
 
-`t/connection-url-test.lisp`. The parsing half needs no database at all, which
-makes it the second such file -- `CLAUDE.md` currently says
-`t/named-parameters-test.lisp` is the only one, and that line needs updating
-with it. Cover at least: both schemes, a percent-encoded password containing
+`t/connection-url-test.lisp`. The parsing half needs no database at all, so add
+it to the list of such files `CLAUDE.md` keeps. Cover at least: both schemes, a
+percent-encoded password containing
 `@` and `:`, a missing port, a missing database, an IPv6 literal, each
 `sslmode` value, an unknown query parameter, and something that is not a URL at
 all. Then one test that actually connects through a URL built from the fixture
