@@ -3,6 +3,9 @@ name: CI
 on:
   push:
     branches: [develop, main]
+    # A release tag runs the whole suite again, against the exact tree the
+    # release tarball will be cut from.
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
 
@@ -11,6 +14,27 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Nothing keeps the two :version forms in the .asd in step with the tag being
+  # released -- they are hand-edited literals -- so the tag is where the two are
+  # made to agree. A mismatch here is worth stopping for: the version ASDF
+  # reports is the one Quicklisp users will quote back in a bug report.
+  version:
+    name: Version
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: The tag and the .asd must agree
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          count=$(grep -c "^  :version \"$version\"\$" cl-postgres-client.asd || true)
+          if [ "$count" != 2 ]; then
+            grep -n ':version' cl-postgres-client.asd
+            echo "::error::$GITHUB_REF_NAME does not match both :version forms above"
+            exit 1
+          fi
+
   # The gate. SBCL is the reference implementation; CCL and ECL are here because
   # Quicklisp is a home for portable libraries, and a suite that only ever runs
   # on SBCL is how an implementation-specific assumption gets in unnoticed.

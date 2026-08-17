@@ -44,7 +44,10 @@ Versions are semantic, and 0.x means the surface may still move: breaking
 changes bump the minor, everything else the patch.
 
 1. Make `:version` in **both** systems in `cl-postgres-client.asd` the version
-   being released. For the first release the file already says `0.1.0`.
+   being released -- nothing updates them for you. For the first release the
+   file already says `0.1.0`. CI checks the two against the tag in step 3 and
+   fails the run if they disagree, so a stale version costs a deleted tag
+   rather than a bad dist.
 2. Commit any change from step 1 and let CI finish on `develop`.
 3. Tag and push:
 
