@@ -82,7 +82,7 @@ it was signalled at all is an assertion of its own."
   `(with-test-client (,client)
      (create-users-table ,client)
      (unwind-protect (progn ,@body)
-       (ignore-errors (pgc:execute ,client "drop table if exists users")))))
+       (caught-condition (pgc:execute ,client "drop table if exists users")))))
 
 (defclass test-user ()
   ((id :initarg :id :reader test-user-id)
