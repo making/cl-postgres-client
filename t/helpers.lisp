@@ -22,6 +22,17 @@ in docker-compose.yaml."
         :user (or (uiop:getenv "PGC_TEST_USER") "pgc")
         :password (or (uiop:getenv "PGC_TEST_PASSWORD") "pgc")))
 
+(defun test-connection-url (&optional database)
+  "The same settings spelled as a connection URL, naming DATABASE instead of the
+test database when one is given."
+  (let ((options (test-connection-options)))
+    (format nil "postgresql://~a:~a@~a:~a/~a"
+            (getf options :user)
+            (getf options :password)
+            (getf options :host)
+            (getf options :port)
+            (or database (getf options :database)))))
+
 (defun connect-for-test ()
   "Open a client against the test database.
 Notices are turned down to warnings because the fixtures open with

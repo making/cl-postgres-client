@@ -30,6 +30,9 @@ with named parameters still in place."))
   (:documentation "The name or index of the parameter that could not be bound,
 or NIL when the problem was not with one parameter in particular."))
 
+(defgeneric error-url (condition)
+  (:documentation "The connection URL that could not be taken apart."))
+
 (define-condition postgres-client-error (error)
   ((description :initarg :description :initform nil :reader error-description))
   (:documentation "Base class for every error signalled by cl-postgres-client.
@@ -82,6 +85,17 @@ statement: a named placeholder with nothing bound to it, a binding that names no
 placeholder, or a parameter list of the wrong shape.  ERROR-PARAMETER-NAME
 returns the offending name when there is a single one."))
 
+(define-condition connection-url-error (postgres-client-error)
+  ((url :initarg :url :initform nil :reader error-url))
+  (:report (lambda (condition stream)
+             (format stream "~a: ~s"
+                     (or (error-description condition) "Malformed connection URL")
+                     (error-url condition))))
+  (:documentation "Signalled when a connection URL cannot be taken apart: a
+string that carries neither the postgresql:// nor the postgres:// scheme, a
+malformed percent escape, a port that is not a number, or a query parameter this
+library does not understand. ERROR-URL returns the URL as it was given."))
+
 (define-condition transaction-error (postgres-client-error)
   ()
   (:report (lambda (condition stream)
@@ -97,6 +111,10 @@ progress."))
          :sql sql
          :description description
          :parameter-name parameter-name))
+
+(defun %connection-url-error (url description)
+  "Signal a CONNECTION-URL-ERROR about URL carrying DESCRIPTION."
+  (error 'connection-url-error :url url :description description))
 
 (defun %transaction-error (description)
   "Signal a TRANSACTION-ERROR carrying DESCRIPTION."

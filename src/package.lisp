@@ -28,6 +28,7 @@
   (:export
    ;; Connecting
    #:connect
+   #:parse-connection-url
    #:disconnect
    #:reconnect
    #:connected-p
@@ -105,10 +106,12 @@
    #:too-many-columns-error
    #:parameter-error
    #:transaction-error
+   #:connection-url-error
    #:error-sql
    #:error-row-count
    #:error-column-count
    #:error-parameter-name
+   #:error-url
    #:error-description
 
    ;; Conditions raised by PostgreSQL, re-exported from cl-postgres

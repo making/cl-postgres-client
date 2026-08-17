@@ -49,6 +49,22 @@ implementation that runs it.
                 :params '(:n 100 :to 2))))
 ```
 
+Credentials usually arrive as one string rather than as pieces, so the URL
+itself will do:
+
+```lisp
+(pgc:with-client (client :url (uiop:getenv "DATABASE_URL"))
+  (pgc:query-value client "select version()"))
+```
+
+Both `postgresql://` and `postgres://` are read, percent escapes are decoded
+only after the URL has been split — so a password may hold an `@` of its own —
+and the `sslmode`, `application_name`, `host`, `port`, `dbname`, `user` and
+`password` parameters are understood, an unknown one being an error rather than
+something dropped. A keyword argument given beside `:url` wins over the URL, and
+`parse-connection-url` hands back the same plist for a caller who wants the
+pieces for something else.
+
 The same operations compose as a pipeline when the statement is built up rather
 than written out:
 
@@ -175,8 +191,8 @@ such as `cl-postgres-error:unique-violation`, still match.
 
 What this library signals itself is the mismatch between what was asked for and
 what came back: `empty-result-error`, `too-many-rows-error`,
-`too-many-columns-error`, `parameter-error` and `transaction-error`, all under
-`postgres-client-error`.
+`too-many-columns-error`, `parameter-error`, `transaction-error` and
+`connection-url-error`, all under `postgres-client-error`.
 
 ## Prepared statements
 

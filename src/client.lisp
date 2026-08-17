@@ -58,25 +58,38 @@ Use this to put this library's API on top of a connection some other code owns.
 Note that DISCONNECT will close it."
   (%make-client :connection connection))
 
-(defun connect (&key (host "localhost") (port 5432)
-                     (database (required-argument :database))
-                     (user (required-argument :user))
-                     (password "")
-                     (use-ssl :no)
-                     (service "postgres")
-                     (application-name "cl-postgres-client")
-                     use-binary)
+(defun connect (&key url host port database user password use-ssl service
+                     application-name use-binary)
   "Open a connection to PostgreSQL and return a client for it.
 
-HOST may be a host name or :UNIX for a Unix domain socket. USE-SSL is one of
+DATABASE and USER are required, whether given directly or through URL.
+HOST defaults to \"localhost\" and may also be :UNIX for a Unix domain socket,
+PORT to 5432, PASSWORD to the empty string, USE-SSL to :NO, SERVICE to
+\"postgres\" and APPLICATION-NAME to \"cl-postgres-client\". USE-SSL is one of
 :NO, :TRY, :REQUIRE, :YES or :FULL, and anything but :NO needs cl+ssl loaded.
-The remaining arguments are passed straight through to
-CL-POSTGRES:OPEN-DATABASE.
+The arguments are passed straight through to CL-POSTGRES:OPEN-DATABASE.
+
+URL is a connection URL -- what DATABASE_URL holds:
+
+    (pgc:connect :url \"postgresql://app:secret@db.internal:5432/app\")
+
+Any other argument given beside it wins over what the URL says, so
+:URL url :APPLICATION-NAME \"importer\" names the connection without touching
+the credentials. PARSE-CONNECTION-URL describes the form in full.
 
 Close the client with DISCONNECT, or use WITH-CLIENT to do so automatically."
-  (wrap-connection
-   (cl-postgres:open-database database user password host port
-                              use-ssl service application-name use-binary)))
+  (let ((from-url (when url (parse-connection-url url))))
+    (wrap-connection
+     (cl-postgres:open-database
+      (or database (getf from-url :database) (required-argument :database))
+      (or user (getf from-url :user) (required-argument :user))
+      (or password (getf from-url :password) "")
+      (or host (getf from-url :host) "localhost")
+      (or port (getf from-url :port) 5432)
+      (or use-ssl (getf from-url :use-ssl) :no)
+      (or service "postgres")
+      (or application-name (getf from-url :application-name) "cl-postgres-client")
+      use-binary))))
 
 (defun connected-p (client)
   "True when CLIENT's connection is currently open."

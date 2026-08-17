@@ -36,6 +36,21 @@
   (testing "connect insists on a database and a user"
     (ok (signals (pgc:connect :host "localhost") 'error))))
 
+(deftest connecting-through-a-url
+  (testing "a URL says everything the keyword arguments say"
+    (let ((client (pgc:connect :url (test-connection-url))))
+      (unwind-protect
+           (ok (equal '(1) (pgc:query-list client "select 1" :as :value)))
+        (pgc:disconnect client))))
+
+  (testing "a keyword argument wins over the URL"
+    (pgc:with-client (client :url (test-connection-url "no_such_database")
+                             :database (getf (test-connection-options) :database))
+      (ok (pgc:connected-p client))))
+
+  (testing "the URL still has to name a database"
+    (ok (signals (pgc:connect :url "postgresql://localhost") 'error))))
+
 (deftest wrapping-an-existing-connection
   (testing "wrap-connection puts the API on a cl-postgres connection"
     (let* ((options (test-connection-options))
