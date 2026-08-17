@@ -18,6 +18,15 @@ Put the repository where ASDF can find it and load it:
 (asdf:load-system "cl-postgres-client")
 ```
 
+This project is pending inclusion in the official Quicklisp dist. Until then,
+it can be loaded from [Ultralisp](https://ultralisp.org/), which builds and
+publishes it within minutes of a push:
+
+```lisp
+(ql-dist:install-dist "http://dist.ultralisp.org/" :prompt nil)
+(ql:quickload "cl-postgres-client")
+```
+
 The package is `postgres-client`, nicknamed `pgc`. SBCL, Clozure CL and ECL are
 supported and CI gates on all three; see [rontolisp](#rontolisp) for the fourth
 implementation that runs it.
