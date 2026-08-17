@@ -1,20 +1,20 @@
 LISP ?= sbcl
 QUICKLISP_URL ?= https://beta.quicklisp.org/quicklisp.lisp
 
-# `make test LISP=ecl`, `LISP=ccl`.  Only two things are spelled differently
-# between the implementations: how a file is run as a script, and which flags
-# mean "read no init file and do not stop at a REPL".  --load and --eval agree
-# everywhere, and a script ends the process at end of file on all three, so
-# every other line below is written once.  A batch of --eval forms still ends
-# with an explicit quit: ECL would otherwise fall into the REPL and read make's
-# own stdin.
+# `make test LISP=ecl`, `LISP=ccl`.  What differs between the implementations is
+# only how a file is run without an init file and without landing in a REPL:
+# SBCL has --script, ECL spells it --shell, and CCL's kernel has neither -- it
+# takes --load together with the flags that mean no init file, no herald, and
+# exit at end of input.  --load and --eval agree everywhere, so every other line
+# below is written once.  A batch of --eval forms still ends with an explicit
+# quit, or ECL would fall into the REPL and read make's own stdin.
 LISP_KIND = $(notdir $(LISP))
 ifeq ($(LISP_KIND),ecl)
   LISP_SCRIPT = --norc --shell
   LISP_BATCH  = --norc
 else ifeq ($(LISP_KIND),ccl)
-  LISP_SCRIPT = --script
-  LISP_BATCH  = --batch --no-init
+  LISP_SCRIPT = --no-init --quiet --batch --load
+  LISP_BATCH  = --no-init --quiet --batch
 else
   LISP_SCRIPT = --script
   LISP_BATCH  = --non-interactive --no-userinit
